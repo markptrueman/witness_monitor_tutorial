@@ -2,10 +2,12 @@
 const steem = require('steem')
 const discord = require('discord.io')
 const moment = require('moment')
+const fs = require('fs')
 
 const accountname = 'markangeltrueman' // witness that you are monitoring
 
 let missedCount = -1;
+let lastConfirmed = -1;
 
 /** you can get your discord user id by tagging yourself in discord and then adding a backslash in front of your username
 * for example  \@MarkAngelTrueman#5965
@@ -14,8 +16,11 @@ let missedCount = -1;
 * Just add the numeric part here
 */
 
-let discorduser = '123234234123123234';
-let token = 'your discord token here'
+let config = JSON.parse(fs.readFileSync('config.json'))
+
+let discorduser = config.DISCORD_USER;
+let token = config.DISCORD_TOKEN;
+
 
 // set the steem API to use the RPC url of your choice
 steem.api.setOptions({ url: 'https://api.steemit.com' });
@@ -73,6 +78,7 @@ let start = async() => {
                try {    
                     let witness = await steem.api.getWitnessByAccountAsync(accountname);
                     missedCount = witness.total_missed;
+                    lastConfirmed = witness.last_confirmed_block_num;
                     bot.sendMessage({
                         to: discorduser,
                         message: moment().utc().format("YYYY-MM-DD HH:mm:ss") +  " : " + accountname + " Initial Missed Block Count = " + missedCount
@@ -107,6 +113,17 @@ let start = async() => {
                             });
 
                         missedCount = witness.total_missed;
+                    }
+                    // check for produced blocks
+                    if (witness.last_confirmed_block_num != lastConfirmed)
+                    {
+                        // have produced a block
+                        lastConfirmed = witness.last_confirmed_block_num;
+                        console.log("Witness has produced a block");
+                        bot.sendMessage({
+                            to: discorduser,
+                            message: moment().utc().format("YYYY-MM-DD HH:mm:ss") +  " : Witness produced a block"
+                        });
                     }
                 }
                 catch (e)
