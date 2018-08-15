@@ -1,0 +1,16 @@
+{
+  "name": "discordexample",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord.io": "github:woor/discord.io#gateway_v6",
+    "moment": "^2.22.2",
+    "steem": "^0.7.1"
+  }
+}
