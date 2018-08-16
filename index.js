@@ -30,6 +30,8 @@ let useBotOutput = true;
 // set the steem API to use the RPC url of your choice
 steem.api.setOptions({ url: 'https://api.steemit.com' });
 const client = new dsteem.Client('https://api.steemit.com');
+
+
 /**
  * 
  *  Bot configuration stuff
@@ -82,17 +84,29 @@ bot.on('disconnect', function(erMsg, code) {
 let start = async() => {
     try {
 
+        
+
         steem.api.streamOperations(function(err,res){
             
             if(res[0] && res[0] === 'account_witness_vote' && res[1].witness === accountname) {
+                steem.api.getAccounts([res[1].account], async function(err,resp) {
 
-                if (res[1].approve === true)
-                {
-                    message("Witness approved by - " + res[1].account)
-                }
-                else {
-                   message("Witness unapproved by - " + res[1].account)
-                }
+                    const globalprops = await steem.api.getDynamicGlobalPropertiesAsync();
+                    // calculate vests
+                    const totalSteem = Number(globalprops.total_vesting_fund_steem.split(' ')[0]);
+                    const totalVests = Number(globalprops.total_vesting_shares.split(' ')[0]);
+                    const userVests = Number(resp[0].vesting_shares.split(' ')[0]);
+
+                    let sp =  totalSteem * (userVests / totalVests);
+
+                    if (res[1].approve === true)
+                    {
+                        message("Witness approved by - " + res[1].account + " with SP of " + sp.toFixed(2))
+                    }
+                    else {
+                        message("Witness unapproved by - " + res[1].account + "with SP of " + sp.toFixed(2))
+                    }
+                });
                
                 
 
