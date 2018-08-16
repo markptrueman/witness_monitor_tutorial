@@ -1,13 +1,17 @@
 // import required libraries.
 const steem = require('steem')
+const dsteem = require('dsteem')
 const discord = require('discord.io')
 const moment = require('moment')
 const fs = require('fs')
+
+
 
 const accountname = 'markangeltrueman' // witness that you are monitoring
 
 let missedCount = -1;
 let lastConfirmed = -1;
+
 
 /** you can get your discord user id by tagging yourself in discord and then adding a backslash in front of your username
 * for example  \@MarkAngelTrueman#5965
@@ -20,11 +24,12 @@ let config = JSON.parse(fs.readFileSync('config.json'))
 
 let discorduser = config.DISCORD_USER;
 let token = config.DISCORD_TOKEN;
+let useBotOutput = false;
 
 
 // set the steem API to use the RPC url of your choice
 steem.api.setOptions({ url: 'https://api.steemit.com' });
-
+const client = new dsteem.Client('https://api.steemit.com');
 /**
  * 
  *  Bot configuration stuff
@@ -36,15 +41,28 @@ let bot = new discord.Client({
     autorun: true
 });
 
+
+let message = (message) => 
+{
+    console.log(moment().utc().format("YYYY-MM-DD HH:mm:ss") + " : " + message);
+
+    // send a message to a user id when you are ready
+    if (useBotOutput)   {
+        bot.sendMessage({
+            to: discorduser,
+            message: moment().utc().format("YYYY-MM-DD HH:mm:ss") + " : " + message
+        });
+    }
+}
+
+
 // ready callback is fired once the bot is connected.
 bot.on('ready', function() {
     console.log('Logged in as %s - %s\n', bot.username, bot.id);
 
     // send a message to a user id when you are ready
-    bot.sendMessage({
-        to: discorduser,
-        message: moment().utc().format("YYYY-MM-DD HH:mm:ss") + " : Witness Monitor Bot Starting....."
-    });
+    message("Witness Monitor Bot Starting.....")
+ 
 
 });
 
@@ -64,6 +82,24 @@ bot.on('disconnect', function(erMsg, code) {
 let start = async() => {
     try {
 
+        steem.api.streamOperations(function(err,res){
+            
+            if(res[0] && res[0] === 'account_witness_vote' && res[1].witness === accountname) {
+
+                if (res[1].approve === true)
+                {
+                    message("Witness approved by - " + res[1].account)
+                }
+                else {
+                   message("Witness unapproved by - " + res[1].account)
+                }
+               
+                
+
+            }
+
+        })
+
         // wait 10 seconds before you start for the bot to connect
         await timeout(10)
 
@@ -78,20 +114,15 @@ let start = async() => {
                try {    
                     let witness = await steem.api.getWitnessByAccountAsync(accountname);
                     missedCount = witness.total_missed;
+                   
                     lastConfirmed = witness.last_confirmed_block_num;
-                    bot.sendMessage({
-                        to: discorduser,
-                        message: moment().utc().format("YYYY-MM-DD HH:mm:ss") +  " : " + accountname + " Initial Missed Block Count = " + missedCount
-                    });
-                    console.log("Initial Missed Block count = " + missedCount)
+                    message("Initial Missed Block Count = " + missedCount)
+                    
                
                     }
                 catch (e){
-                    console.log("Error in getWitnessByAccount " + e)
-                    bot.sendMessage({
-                        to: discorduser,
-                        message: moment().utc().format("YYYY-MM-DD HH:mm:ss") +  " : " + accountname + " Error in getWitnessByAccount " + e
-                    });
+                    message("Error in getWitnessByAccount " + e)
+                    
                 }
             
 
@@ -106,12 +137,8 @@ let start = async() => {
                     if (witness.total_missed > missedCount) 
                     {
                         // we have missed a block!!!
-                        console.log("Witness has missed a block");
-                        bot.sendMessage({
-                                to: discorduser,
-                                message: moment().utc().format("YYYY-MM-DD HH:mm:ss") +  " : ⚠⚠⚠ Witness Missed a block ⚠⚠⚠"
-                            });
-
+                        message("⚠⚠⚠ Witness Missed a block ⚠⚠⚠");
+                        
                         missedCount = witness.total_missed;
                     }
                     // check for produced blocks
@@ -119,20 +146,15 @@ let start = async() => {
                     {
                         // have produced a block
                         lastConfirmed = witness.last_confirmed_block_num;
-                        console.log("Witness has produced a block");
-                        bot.sendMessage({
-                            to: discorduser,
-                            message: moment().utc().format("YYYY-MM-DD HH:mm:ss") +  " : Witness produced a block"
-                        });
+                        message("Witness has produced a block");
+                       
                     }
+
+                    
                 }
                 catch (e)
                 {
-                    console.log("Error in getWitnessByAccount " + e)
-                    bot.sendMessage({
-                        to: discorduser,
-                        message: moment().utc().format("YYYY-MM-DD HH:mm:ss") +  " : " + accountname + " Error in getWitnessByAccount " + e
-                    });
+                    message("Error in getWitnessByAccount " + e)
                 }
             }
 

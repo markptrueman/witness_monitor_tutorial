@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "discord.io": "github:woor/discord.io#gateway_v6",
+    "dsteem": "^0.9.0",
     "moment": "^2.22.2",
     "steem": "^0.7.1"
   }
