@@ -24,7 +24,7 @@ let config = JSON.parse(fs.readFileSync('config.json'))
 
 let discorduser = config.DISCORD_USER;
 let token = config.DISCORD_TOKEN;
-let useBotOutput = false;
+let useBotOutput = true;
 
 
 // set the steem API to use the RPC url of your choice
