@@ -239,6 +239,7 @@ let start = async() => {
                     if (witness.total_missed > missedCount) 
                     {
                         // we have missed a block!!!
+                        dailyStats.missedToday = dailyStats.missedToday + 1;
                         message("⚠⚠⚠ Witness Missed a block ⚠⚠⚠");
                         
                         missedCount = witness.total_missed;
@@ -248,7 +249,9 @@ let start = async() => {
                     {
                         // have produced a block
                         lastConfirmed = witness.last_confirmed_block_num;
+                        dailyStats.createdToday = dailyStats.createdToday + 1;
                         message("Witness has produced a block");
+
                        
                     }
 
