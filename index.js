@@ -1,17 +1,10 @@
 // import required libraries.
 const steem = require('steem')
-const dsteem = require('dsteem')
 const discord = require('discord.io')
 const moment = require('moment')
 const fs = require('fs')
 
-
-
-const accountname = 'markangeltrueman' // witness that you are monitoring
-
-let missedCount = -1;
-let lastConfirmed = -1;
-
+let config = JSON.parse(fs.readFileSync('config.json'))
 
 /** you can get your discord user id by tagging yourself in discord and then adding a backslash in front of your username
 * for example  \@MarkAngelTrueman#5965
@@ -20,16 +13,33 @@ let lastConfirmed = -1;
 * Just add the numeric part here
 */
 
-let config = JSON.parse(fs.readFileSync('config.json'))
 
-let discorduser = config.DISCORD_USER;
-let token = config.DISCORD_TOKEN;
-let useBotOutput = true;
+const accountname = config.WITNESS; // witness that you are monitoring
+const discorduser = config.DISCORD_USER;
+const token = config.DISCORD_TOKEN;
+const postDailyStats = config.POST_DAILY_STATS;
+const useDiscord = config.USE_DISCORD;
 
+
+
+let missedCount = -1;
+let lastConfirmed = -1;
+let witness = null;
+
+
+
+
+
+let lastDailyReport = moment().utc().dayOfYear() - 1;
+
+let dailyStats = {
+    date: moment(),
+    missedToday: 0,
+    createdToday: 0,
+}
 
 // set the steem API to use the RPC url of your choice
 steem.api.setOptions({ url: 'https://api.steemit.com' });
-const client = new dsteem.Client('https://api.steemit.com');
 
 
 /**
@@ -49,7 +59,7 @@ let message = (message) =>
     console.log(moment().utc().format("YYYY-MM-DD HH:mm:ss") + " : " + message);
 
     // send a message to a user id when you are ready
-    if (useBotOutput)   {
+    if (useDiscord)   {
         bot.sendMessage({
             to: discorduser,
             message: moment().utc().format("YYYY-MM-DD HH:mm:ss") + " : " + message
@@ -75,12 +85,90 @@ bot.on('disconnect', function(erMsg, code) {
     bot.connect();
 });
 
+bot.on('message', function(user, userID, channelID, message, event) {
+   
+    if (message === "!stats")
+    {
+      sendStats(false);
+    }
+})
+
+let sendStats = async (yest) => {
+   
+
+    // get witness postition
+    try {
+        let data = await steem.api.getWitnessesByVoteAsync("", 200);
+        // loop through this and get the position that your witness is in after removing all of those with null signing_key
+        let activePosition = 0;
+        let inactivePosition = 0;
+
+        for (var i = 0; i < data.length; i++)
+        {
+            if (data[i].owner === accountname)
+            {
+                activePosition++;
+                inactivePosition++
+                break;
+            }
+            else {
+                if (data[i].signing_key.startsWith("STM1111111"))
+                {
+                    // inactive 
+                    inactivePosition++
+                }
+                else {
+                    activePosition++;
+                    inactivePosition++;
+                }
+                
+            }
+        }
+
+
+
+        var report = "Daily report for ";
+        var yesterday =  moment().utc().subtract(1, 'days')
+        if (yest) {
+        report += yesterday.format('MMM DD');
+        }
+        else { 
+        report += moment().utc().format('MMM DD');
+        }
+        report+= "\r\n";
+        report += "Witness missed " + dailyStats.missedToday + " blocks today.";
+        report+= "\r\n";
+        report += "Witness created " + dailyStats.createdToday + " blocks today.";
+        report+= "\r\n";
+        report += "Witness position : Inactive - " + inactivePosition + " / Active - " + activePosition;
+        report+= "\r\n";
+        report+= "Witness running version : " + witness.running_version;
+    
+        message(report)
+    }
+    catch (e)
+    {
+        message("Unable to send report " + e)
+    }
+    
+    
+  }
+  
+  let resetDailyStats = () => {
+    dailyStats = {
+      missedToday: 0,
+      createdToday: 0,
+      currentFullStatus: true,
+      currentSeedStatus: true,
+    }
+  }
+
 /**
  * 
  *  Main program loop
  * 
  */
-
+ 
 let start = async() => {
     try {
 
@@ -126,7 +214,7 @@ let start = async() => {
                 console.log("Initialising current blockcount....");
                // go and get witness information
                try {    
-                    let witness = await steem.api.getWitnessByAccountAsync(accountname);
+                    witness = await steem.api.getWitnessByAccountAsync(accountname);
                     missedCount = witness.total_missed;
                    
                     lastConfirmed = witness.last_confirmed_block_num;
@@ -146,7 +234,7 @@ let start = async() => {
                 // check the  missedCount against the current live missed count
                 
                 try {    
-                    let witness = await steem.api.getWitnessByAccountAsync(accountname);
+                    witness = await steem.api.getWitnessByAccountAsync(accountname);
         
                     if (witness.total_missed > missedCount) 
                     {
@@ -173,6 +261,11 @@ let start = async() => {
             }
 
             // wait 60 seconds for next check
+            if (postDailyStats && moment().utc().dayOfYear() > lastDailyReport ) {
+                sendStats(true);
+                resetDailyStats();
+                lastDailyReport = moment().utc().dayOfYear();
+              }
             await timeout(60)
         }
     } catch (e) {
