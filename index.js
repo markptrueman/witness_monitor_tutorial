@@ -154,7 +154,7 @@ let sendStats = async (yest) => {
     
   }
   
-  let resetDailyStats = () => {
+  let resetDailyStats = async () => {
     dailyStats = {
       missedToday: 0,
       createdToday: 0,
@@ -265,8 +265,8 @@ let start = async() => {
 
             // wait 60 seconds for next check
             if (postDailyStats && moment().utc().dayOfYear() > lastDailyReport ) {
-                sendStats(true);
-                resetDailyStats();
+                await sendStats(true);
+                await resetDailyStats();
                 lastDailyReport = moment().utc().dayOfYear();
               }
             await timeout(60)
