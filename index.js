@@ -176,7 +176,7 @@ let start = async() => {
 
         steem.api.streamOperations(function(err,res){
             
-            if(res[0] && res[0] === 'account_witness_vote' && res[1].witness === accountname) {
+            if(res && res[0] === 'account_witness_vote' && res[1].witness === accountname) {
                 steem.api.getAccounts([res[1].account], async function(err,resp) {
 
                     const globalprops = await steem.api.getDynamicGlobalPropertiesAsync();
