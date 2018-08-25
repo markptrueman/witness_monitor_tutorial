@@ -19,6 +19,11 @@ const discorduser = config.DISCORD_USER;
 const token = config.DISCORD_TOKEN;
 const postDailyStats = config.POST_DAILY_STATS;
 const useDiscord = config.USE_DISCORD;
+const failoverTest = config.TEST_MODE;
+const wif = config.WIF;
+const url = config.WITNESS_URL;
+const props = config.WITNSS_PROPS;
+const disableKey = config.DISABLE_KEY;
 
 
 
@@ -161,6 +166,23 @@ let sendStats = async (yest) => {
       currentFullStatus: true,
       currentSeedStatus: true,
     }
+  }
+
+  let handleWitnessFailover = async () => {
+      try {
+          if (!failoverTest)
+          {
+            let result = await steem.broadcast.witnessUpdateAsync(wif, accountname, url, blockSigningKey, props, fee);
+             message("Witness has failed over " + JSON.stringify(result));
+          }
+          else {
+            message("TEST MODE : Witness has failed over ");
+          }
+      }
+      catch (e)
+      {
+          message("Unable to perform witness update " + e)
+      }
   }
 
 /**

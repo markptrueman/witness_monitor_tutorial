@@ -3,5 +3,20 @@
     "DISCORD_TOKEN":  "your discord token",  
     "WITNESS" : "your witness account",
     "POST_DAILY_STATS" : true,
-    "USE_DISCORD" : true
+    "USE_DISCORD" : true,
+    "TEST_MODE" : true,
+    "RPC_NODES": ["https://api.steemit.com",
+        "https://steemd.privex.io",
+        "https://gtg.steem.house:8090",
+        "https://rpc.buildteam.io",
+        "https://steemd.minnowsupportproject.org"],
+    "WIF" : "YOUR ACTIVE KEY",
+    "BLOCK_KEYS" : ["a list of",
+                    "block signing keys"],
+    "WITNESS_URL" : "your witness url for updates",
+    "WITNESS_PROPS" : {"account_creation_fee":"0.200 STEEM","maximum_block_size":65536,"sbd_interest_rate":0},
+    "DISABLE_KEY" : "STM1111111111111111111111111111111114T1Anm",
+    "MISS_BEFORE_FAILOVER" : 1,
+    "MISS_BEFORE_DISABLE" : 2
+        
 }
