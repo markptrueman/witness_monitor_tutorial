@@ -3,6 +3,7 @@ const steem = require('steem')
 const discord = require('discord.io')
 const moment = require('moment')
 const fs = require('fs')
+const dsteem = require('dsteem')
 
 let config = JSON.parse(fs.readFileSync('config.json'))
 
@@ -195,34 +196,53 @@ let start = async() => {
     try {
 
         
+        const client = new dsteem.Client('https://api.steemit.com')
 
-        steem.api.streamOperations(function(err,res){
+        stream = client.blockchain.getBlockStream();
+        stream.on('data', function(block) {
+            let transactions = block.transactions;
+            for (var i =0; i < transactions.length; i++)
+            {
+                let trans = transactions[i];
+               // console.log(JSON.stringify(trans.operations));
+                if (trans.operations && trans.operations.length > 0 && 
+                    trans.operations[0][0] == 'account_witness_vote'  && 
+                     trans.operations[0][1].witness === accountname)
+                {
+
+                    console.log("witness approval change");
+                    console.log(trans.operations[0][1])
+                    steem.api.getAccounts([trans.operations[0][1].account], async function(err,resp) {
+
+                        if (err)
+                        {
+                            message("Error in getaccounts")
+                            console.log(err);
+                            
+                        }else {
+    
+                            const globalprops = await steem.api.getDynamicGlobalPropertiesAsync();
+                            // calculate vests
+                            const totalSteem = Number(globalprops.total_vesting_fund_steem.split(' ')[0]);
+                            const totalVests = Number(globalprops.total_vesting_shares.split(' ')[0]);
+                            const userVests = Number(resp[0].vesting_shares.split(' ')[0]);
+    
+                            let sp =  totalSteem * (userVests / totalVests);
+    
+                            if (trans.operations[0][1].approve === true)
+                            {
+                                message("Witness approved by - " + trans.operations[0][1].account + " with SP of " + sp.toFixed(2))
+                            }
+                            else {
+                                message("Witness unapproved by - " + trans.operations[0][1].account + "with SP of " + sp.toFixed(2))
+                            }
+                        }
+                    });
+                }
+            } 
             
-            if(res && res[0] === 'account_witness_vote' && res[1].witness === accountname) {
-                steem.api.getAccounts([res[1].account], async function(err,resp) {
-
-                    const globalprops = await steem.api.getDynamicGlobalPropertiesAsync();
-                    // calculate vests
-                    const totalSteem = Number(globalprops.total_vesting_fund_steem.split(' ')[0]);
-                    const totalVests = Number(globalprops.total_vesting_shares.split(' ')[0]);
-                    const userVests = Number(resp[0].vesting_shares.split(' ')[0]);
-
-                    let sp =  totalSteem * (userVests / totalVests);
-
-                    if (res[1].approve === true)
-                    {
-                        message("Witness approved by - " + res[1].account + " with SP of " + sp.toFixed(2))
-                    }
-                    else {
-                        message("Witness unapproved by - " + res[1].account + "with SP of " + sp.toFixed(2))
-                    }
-                });
-               
-                
-
-            }
-
         })
+
 
         // wait 10 seconds before you start for the bot to connect
         await timeout(10)
