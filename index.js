@@ -234,7 +234,7 @@ let start = async() => {
                                 message("Witness approved by - " + trans.operations[0][1].account + " with SP of " + sp.toFixed(2))
                             }
                             else {
-                                message("Witness unapproved by - " + trans.operations[0][1].account + "with SP of " + sp.toFixed(2))
+                                message("Witness unapproved by - " + trans.operations[0][1].account + " with SP of " + sp.toFixed(2))
                             }
                         }
                     });
@@ -265,7 +265,7 @@ let start = async() => {
                
                     }
                 catch (e){
-                    message("Error in getWitnessByAccount " + e)
+                    console.err("Error in getWitnessByAccount " + e)
                     
                 }
             
@@ -301,7 +301,7 @@ let start = async() => {
                 }
                 catch (e)
                 {
-                    message("Error in getWitnessByAccount " + e)
+                    console.error("Error in getWitnessByAccount " + e)
                 }
             }
 
